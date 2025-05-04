@@ -2,25 +2,22 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using beautysalon.Database;
 
 #nullable disable
 
-namespace beautysalon.Database.Migrations
+namespace beautysalon.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    [Migration("20250201135901_update1.01")]
-    partial class update101
+    partial class DatabaseContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.1")
+                .HasAnnotation("ProductVersion", "9.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -34,6 +31,11 @@ namespace beautysalon.Database.Migrations
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("text");
+
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(21)
+                        .HasColumnType("character varying(21)");
 
                     b.Property<string>("Name")
                         .HasMaxLength(256)
@@ -50,6 +52,10 @@ namespace beautysalon.Database.Migrations
                         .HasDatabaseName("RoleNameIndex");
 
                     b.ToTable("AspNetRoles", (string)null);
+
+                    b.HasDiscriminator().HasValue("IdentityRole<Guid>");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -229,8 +235,9 @@ namespace beautysalon.Database.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("Nip")
-                        .HasColumnType("integer");
+                    b.Property<string>("Nip")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("Number")
                         .HasColumnType("text");
@@ -332,6 +339,14 @@ namespace beautysalon.Database.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");
 
@@ -383,6 +398,13 @@ namespace beautysalon.Database.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("beautysalon.Database.Models.ApplicationRole", b =>
+                {
+                    b.HasBaseType("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>");
+
+                    b.HasDiscriminator().HasValue("ApplicationRole");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>

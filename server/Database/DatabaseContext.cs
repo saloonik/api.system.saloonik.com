@@ -15,7 +15,7 @@ namespace beautysalon.Database
         public DbSet<Staff> Staff { get; set; }
         public DbSet<Service> Services { get; set; }
         public DbSet<Reservation> Reservations { get; set; }
-        public DbSet<ApplicationRole> applicationRoles { get; set; }
+        public DbSet<ApplicationRole> ApplicationRoles { get; set; }
 
         protected override void OnConfiguring (DbContextOptionsBuilder optionsBuilder)
         {
@@ -25,7 +25,7 @@ namespace beautysalon.Database
         protected override void OnModelCreating (ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            ModelExtensions.ConfigureReservationService (modelBuilder);
+            ModelExtensions.ConfigureReservationService(modelBuilder);
         }
 
     }

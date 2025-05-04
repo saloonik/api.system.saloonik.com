@@ -4,6 +4,8 @@ namespace beautysalon.Database.Models
 {
     public class Staff : IdentityUser<Guid>
     {
+        public required string FirstName { get; set; }
+        public required string LastName { get; set; }
         public decimal? Salary { get; set; }
         public decimal? SalaryBonus { get; set; }
         public DateTime? DOB { get; set; }

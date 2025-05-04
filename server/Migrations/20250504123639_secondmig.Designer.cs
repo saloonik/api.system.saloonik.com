@@ -9,18 +9,18 @@ using beautysalon.Database;
 
 #nullable disable
 
-namespace beautysalon.Database.Migrations
+namespace beautysalon.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    [Migration("20250201143959_update1.03")]
-    partial class update103
+    [Migration("20250504123639_secondmig")]
+    partial class secondmig
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.1")
+                .HasAnnotation("ProductVersion", "9.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -238,8 +238,9 @@ namespace beautysalon.Database.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("Nip")
-                        .HasColumnType("integer");
+                    b.Property<string>("Nip")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("Number")
                         .HasColumnType("text");
@@ -340,6 +341,14 @@ namespace beautysalon.Database.Migrations
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");

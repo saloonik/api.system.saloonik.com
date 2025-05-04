@@ -4,10 +4,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace beautysalon.Database.Migrations
+namespace beautysalon.Migrations
 {
     /// <inheritdoc />
-    public partial class init : Migration
+    public partial class initmig : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -19,7 +19,8 @@ namespace beautysalon.Database.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     NormalizedName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    ConcurrencyStamp = table.Column<string>(type: "text", nullable: true)
+                    ConcurrencyStamp = table.Column<string>(type: "text", nullable: true),
+                    Discriminator = table.Column<string>(type: "character varying(21)", maxLength: 21, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -32,7 +33,7 @@ namespace beautysalon.Database.Migrations
                 {
                     CompanyId = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
-                    Nip = table.Column<int>(type: "integer", nullable: false),
+                    Nip = table.Column<string>(type: "text", nullable: false),
                     Street = table.Column<string>(type: "text", nullable: true),
                     Number = table.Column<string>(type: "text", nullable: true),
                     City = table.Column<string>(type: "text", nullable: true),
@@ -43,21 +44,6 @@ namespace beautysalon.Database.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Companies", x => x.CompanyId);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Services",
-                columns: table => new
-                {
-                    ServiceId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ServiceName = table.Column<string>(type: "text", nullable: false),
-                    ServiceDescription = table.Column<string>(type: "text", nullable: false),
-                    ServiceCategory = table.Column<string>(type: "text", nullable: false),
-                    Price = table.Column<decimal>(type: "numeric", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Services", x => x.ServiceId);
                 });
 
             migrationBuilder.CreateTable(
@@ -138,6 +124,28 @@ namespace beautysalon.Database.Migrations
                     table.ForeignKey(
                         name: "FK_Clients_Companies_CompanyId",
                         column: x => x.CompanyId,
+                        principalTable: "Companies",
+                        principalColumn: "CompanyId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Services",
+                columns: table => new
+                {
+                    ServiceId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ServiceName = table.Column<string>(type: "text", nullable: false),
+                    ServiceDescription = table.Column<string>(type: "text", nullable: false),
+                    ServiceCategory = table.Column<string>(type: "text", nullable: false),
+                    Price = table.Column<decimal>(type: "numeric", nullable: false),
+                    CompanyID = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Services", x => x.ServiceId);
+                    table.ForeignKey(
+                        name: "FK_Services_Companies_CompanyID",
+                        column: x => x.CompanyID,
                         principalTable: "Companies",
                         principalColumn: "CompanyId",
                         onDelete: ReferentialAction.Cascade);
@@ -349,6 +357,11 @@ namespace beautysalon.Database.Migrations
                 name: "IX_ReservationService_ServiceId",
                 table: "ReservationService",
                 column: "ServiceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Services_CompanyID",
+                table: "Services",
+                column: "CompanyID");
         }
 
         /// <inheritdoc />

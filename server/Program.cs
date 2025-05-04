@@ -9,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddDbContext<DatabaseContext>(opt => opt.UseNpgsql(builder.Configuration["database:connection_string"]));
+builder.Services.AddDbContext<DatabaseContext>(opt => opt.UseNpgsql(builder.Configuration["db-sql:saloonik"]));
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IValidateCompany, ValidateCompany>();
@@ -47,6 +47,13 @@ async Task CreateRole (RoleManager<ApplicationRole> roleManager, string roleName
 }
 
 var app = builder.Build();
+
+app.UseCors(builder =>
+{
+    builder.AllowAnyOrigin()
+           .AllowAnyMethod()
+           .AllowAnyHeader();
+});
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

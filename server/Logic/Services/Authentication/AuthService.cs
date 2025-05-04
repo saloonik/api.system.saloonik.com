@@ -9,8 +9,8 @@ using beautysalon.Logic.Services.Validators.CompanyValidator;
 public class AuthService : IAuthService
 {
     private readonly UserManager<Staff> _userManager;
-    private readonly ILogger<AuthService> _logger;
     private readonly DatabaseContext _databaseContext;
+    private readonly ILogger<AuthService> _logger;
     private readonly IValidateCompany _validateCompany;
     public AuthService (UserManager<Staff> userManager, ILogger<AuthService> logger, DatabaseContext databaseContext, IValidateCompany validateCompany)
     {
@@ -25,7 +25,6 @@ public class AuthService : IAuthService
         using var transaction = await _databaseContext.Database.BeginTransactionAsync();
         try
         {
-            // Validate Company
             var result = await _validateCompany.ValidateCompanyNIP(authRequest.CompanyNIP);
             if (!result)
             {
@@ -33,7 +32,6 @@ public class AuthService : IAuthService
                 return ServerResponse.CreateErrorResponse("NIP jest niepoprawny", StatusCodes.Status400BadRequest);
             }
 
-            // Check if the company already exists
             var checkIfCompanyExist = await _databaseContext.Companies.AnyAsync(x => x.Nip == authRequest.CompanyNIP);
             if (checkIfCompanyExist)
             {
@@ -41,31 +39,57 @@ public class AuthService : IAuthService
                 return ServerResponse.CreateErrorResponse("Firma z tym NIPem już istnieje", StatusCodes.Status409Conflict);
             }
 
-            // Create new company
-            var company = new Company { Name = authRequest.CompanyName, Nip = authRequest.CompanyNIP };
+            var companyAddr = authRequest.CompanyAddress;
+
+            var company = new Company { Name = authRequest.CompanyName, Nip = authRequest.CompanyNIP, Street= authRequest.CompanyAddress };
             await _databaseContext.Companies.AddAsync(company);
 
-            // Check if the user already exists
             var checkIfUserExist = await _userManager.FindByEmailAsync(authRequest.Email);
             if (checkIfUserExist != null)
             {
                 _logger.LogWarning($"User with email {authRequest.Email} already exists.");
                 await transaction.RollbackAsync();
-                return ServerResponse.CreateErrorResponse("Email jest zajęty", StatusCodes.Status409Conflict);
+                return ServerResponse.CreateErrorResponse("Email jest zajęty", StatusCodes.Status409Conflict); 
             }
 
-            // Create the new user
-            var user = new Staff { Email = authRequest.Email, CompanyId = company.CompanyId, UserName = authRequest.Email};
+            var fullName = authRequest.Name?.Trim() ?? "";
+
+            string firstName = "";
+            string lastName = "";
+
+            if (!string.IsNullOrEmpty(fullName))
+            {
+                var nameParts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+                if (nameParts.Length == 1)
+                {
+                    firstName = nameParts[0];
+                    lastName = ""; 
+                }
+                else
+                {
+                    firstName = nameParts[0];
+                    lastName = string.Join(" ", nameParts.Skip(1));
+                }
+            }
+
+            var user = new Staff
+            {
+                Email = authRequest.Email,
+                CompanyId = company.CompanyId,
+                UserName = authRequest.Email,
+                FirstName = firstName,
+                LastName = lastName
+            };
             var createUserResult = await _userManager.CreateAsync(user, authRequest.Password);
+
             if (!createUserResult.Succeeded)
             {
-                // Log each individual error
                 foreach (var error in createUserResult.Errors)
                 {
                     _logger.LogWarning($"Error creating user with email {authRequest.Email}: {error.Description}");
                 }
 
-                // Optionally, you can also collect the errors to send them in the response
                 var errorMessages = createUserResult.Errors.Select(e => e.Description).ToList();
 
                 
@@ -73,7 +97,6 @@ public class AuthService : IAuthService
                 return ServerResponse.CreateErrorResponse("Nie udało się założyć konta", StatusCodes.Status400BadRequest, string.Join(", ", errorMessages));
             }
 
-            // Assign role to the user
             var addRoleResult = await _userManager.AddToRoleAsync(user, "Owner");
             if (!addRoleResult.Succeeded)
             {
@@ -82,7 +105,6 @@ public class AuthService : IAuthService
                 return ServerResponse.CreateErrorResponse("Nie udało się przypisać roli", StatusCodes.Status400BadRequest);
             }
 
-            // Commit the transaction
             await transaction.CommitAsync();
 
             _logger.LogInformation($"User {authRequest.Email} successfully registered with company {authRequest.CompanyName}.");
