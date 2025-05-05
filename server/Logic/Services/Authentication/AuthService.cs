@@ -91,6 +91,8 @@ public class AuthService : IAuthService
                 StreetNumber = authRequest.StreetNumber,
                 City = authRequest.City,
                 PostalCode = authRequest.PostalCode,
+                Country = authRequest.Country,
+
             };
             await _databaseContext.Companies.AddAsync(company);
             await _databaseContext.SaveChangesAsync(); // Save to generate CompanyId
