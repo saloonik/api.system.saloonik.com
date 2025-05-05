@@ -10,7 +10,7 @@ namespace beautysalon.Database.Models
         public decimal? SalaryBonus { get; set; }
         public DateTime? DOB { get; set; }
         public Guid CompanyId { get; set; }
-        public Company? Company { get; set; }
+        public required Company Company { get; set; }
         public List<Reservation>? Reservations { get; set; }
     }
 }

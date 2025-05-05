@@ -1,3 +1,4 @@
+using beautysalon.AuthContracts;
 using beautysalon.Contracts;
 using beautysalon.Logic.DTOs.ServerResponse;
 using Microsoft.AspNetCore.Mvc;
@@ -33,6 +34,37 @@ namespace beautysalon.Controllers
                     StatusMessage = result.StatusMessage
                 };
                     return StatusCode (serverResponse.StatusCode, serverResponse);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ServerResponse
+                {
+                    IsSuccess = false,
+                    ResultTitle = "Error",
+                    ResultDescription = ex.Message,
+                    StatusCode = 500,
+                    StatusMessage = "An unexpected error occurred."
+                });
+            }
+        }
+        [HttpPost("/login")]
+        public async Task<ActionResult> LoginAsync (LoginRequest authRequest)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+            try
+            {
+                var result = await _authService.LoginAsync(authRequest);
+                var serverResponse = new ServerResponse
+                {
+                    IsSuccess = result.IsSuccess,
+                    ResultTitle = result.ResultTitle,
+                    ResultDescription = result.ResultDescription,
+                    StatusCode = result.StatusCode,
+                    StatusMessage = result.StatusMessage,
+                    Token = result.Token,
+                };
+                return StatusCode(serverResponse.StatusCode, serverResponse);
             }
             catch (Exception ex)
             {

@@ -5,12 +5,11 @@
         public Guid CompanyId { get; set; } = Guid.NewGuid();
         public required string Name { get; set; }
         public required string Nip { get; set; }
-        public string? Street { get; set; }
-        public string? Number { get; set; }
-        public string? City { get; set; }
-        public string? PostalCode { get; set; }
-        public string? Phone { get; set; }
-        public string? Email { get; set; }
+        public required string Street { get; set; }
+        public required string StreetNumber { get; set; }
+        public required string City { get; set; }
+        public required string PostalCode { get; set; }
+        public required string Country { get; set; }
         public virtual ICollection<Client>? ApplicationUsers { get; set; }
         public virtual ICollection<Staff>? Staff {  get; set; }
         public virtual ICollection<Reservation>? Reservations { get; set; }
