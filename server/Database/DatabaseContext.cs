@@ -11,6 +11,7 @@ namespace beautysalon.Database
         public DatabaseContext (DbContextOptions<DatabaseContext> options):base(options)
         { } 
         public DbSet<Company> Companies { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<Client> Clients { get; set; }
         public DbSet<Staff> Staff { get; set; }
         public DbSet<Service> Services { get; set; }
