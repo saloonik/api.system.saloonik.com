@@ -1,7 +1,9 @@
 using beautysalon.AuthContracts;
 using beautysalon.Contracts;
+using beautysalon.Database.Models;
 using beautysalon.Logic.DTOs.ServerResponse;
 using Microsoft.AspNetCore.Mvc;
+using System.Net.Http.Headers;
 
 namespace beautysalon.Controllers
 {
@@ -25,15 +27,7 @@ namespace beautysalon.Controllers
             {
                 var result = await _authService.RegisterAsync(authRequest);
 
-                var serverResponse = new ServerResponse
-                {
-                    IsSuccess = result.IsSuccess,
-                    ResultTitle = result.ResultTitle,
-                    ResultDescription = result.ResultDescription,
-                    StatusCode = result.StatusCode,
-                    StatusMessage = result.StatusMessage
-                };
-                    return StatusCode (serverResponse.StatusCode, serverResponse);
+                return StatusCode(result.StatusCode, result);
             }
             catch (Exception ex)
             {
@@ -47,6 +41,7 @@ namespace beautysalon.Controllers
                 });
             }
         }
+
         [HttpPost("/login")]
         public async Task<ActionResult> LoginAsync (LoginRequest authRequest)
         {
@@ -55,16 +50,8 @@ namespace beautysalon.Controllers
             try
             {
                 var result = await _authService.LoginAsync(authRequest);
-                var serverResponse = new ServerResponse
-                {
-                    IsSuccess = result.IsSuccess,
-                    ResultTitle = result.ResultTitle,
-                    ResultDescription = result.ResultDescription,
-                    StatusCode = result.StatusCode,
-                    StatusMessage = result.StatusMessage,
-                    Token = result.Token,
-                };
-                return StatusCode(serverResponse.StatusCode, serverResponse);
+
+                return StatusCode(result.StatusCode, result);
             }
             catch (Exception ex)
             {
@@ -78,5 +65,31 @@ namespace beautysalon.Controllers
                 });
             }
         }
+
+        [HttpPost("/refresh")]
+        public async Task<ActionResult> GetAccessTokenAsync([FromHeader] string refreshToken)
+        {
+            if (string.IsNullOrEmpty(refreshToken))
+                return BadRequest("Refresh token is required.");
+
+            try
+            {
+                var result = await _authService.GetAccessTokenFromRefreshTokenAsync(refreshToken);
+
+                return StatusCode(result.StatusCode, result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ServerResponse
+                {
+                    IsSuccess = false,
+                    ResultTitle = "Error",
+                    ResultDescription = ex.Message,
+                    StatusCode = 500,
+                    StatusMessage = "An unexpected error occurred."
+                });
+            }
+        }
+
     }
 }
