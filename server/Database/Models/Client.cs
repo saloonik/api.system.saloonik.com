@@ -14,6 +14,7 @@
         public string? Country { get; set; }
         public required Guid CompanyId { get; set; }
         public required Company Company { get; set; }
+        public Guid ReservationsID { get; set; }
         public List<Reservation>? Reservations { get; set; }
     }
 }

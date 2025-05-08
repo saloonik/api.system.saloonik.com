@@ -6,7 +6,8 @@ namespace beautysalon.Logic.Services.TokenProvider
     public interface ITokenGen
 
     {
-        public Tokens CreateToken(Staff user);
+        public Task<Tokens> CreateTokenAsync(Staff user);
         Task<Tokens> CreateAccessTokenFromRefreshTokenAsync(string refreshToken);
+        Task<Staff> DecodeToken(string token);
     }
 }

@@ -45,7 +45,7 @@ public class AuthService : IAuthService
                 return ServerResponse.CreateErrorResponse("Niepoprawny email lub hasło", StatusCodes.Status401Unauthorized);
             }
 
-            Tokens token = _tokenGen.CreateToken(user);
+            Tokens token = await _tokenGen.CreateTokenAsync(user);
 
             return new ServerResponse
             {
@@ -96,7 +96,6 @@ public class AuthService : IAuthService
                 Name = authRequest.CompanyName,
                 Nip = authRequest.CompanyNIP,
                 Street = authRequest.Street,
-                StreetNumber = authRequest.StreetNumber,
                 City = authRequest.City,
                 PostalCode = authRequest.PostalCode,
                 Country = authRequest.Country,

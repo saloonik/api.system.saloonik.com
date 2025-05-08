@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using beautysalon.Database;
@@ -11,9 +12,11 @@ using beautysalon.Database;
 namespace beautysalon.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20250508114541_updatedCompany")]
+    partial class updatedCompany
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -209,9 +212,6 @@ namespace beautysalon.Migrations
 
                     b.Property<string>("PostalCode")
                         .HasColumnType("text");
-
-                    b.Property<Guid>("ReservationsID")
-                        .HasColumnType("uuid");
 
                     b.Property<string>("State")
                         .HasColumnType("text");

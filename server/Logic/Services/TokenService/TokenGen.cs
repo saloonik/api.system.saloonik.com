@@ -10,6 +10,7 @@ using System.Security.Claims;
 using System.Text;
 using System.IdentityModel.Tokens.Jwt;
 
+
 public class TokenGen : ITokenGen
 {
     private readonly IConfiguration _config;
@@ -25,15 +26,19 @@ public class TokenGen : ITokenGen
         _userManager = userManager;
     }
 
-    public Tokens CreateToken(Staff user)
+    public async Task<Tokens> CreateTokenAsync(Staff user)
     {
-        var refreshToken = GenerateRefreshTokenJWT(user);
+        var refreshToken = await GenerateRefreshTokenJWTAsync(user);
+
+        var role = await _userManager.GetRolesAsync(user);
+        var roleName = role.FirstOrDefault()?.ToString();
 
         var claims = new List<Claim>
     {
-        new Claim(ClaimTypes.Email, user.Email),
-        new Claim(ClaimTypes.Name, user.FirstName),
-        new Claim(ClaimTypes.Sid, user.Id.ToString())
+        new Claim("email", user.Email),
+        new Claim("name", user.FirstName),
+        new Claim("sid", user.Id.ToString()),
+        new Claim("role", roleName)
     };
 
         var signingCredentials = new SigningCredentials(_key, SecurityAlgorithms.HmacSha512);
@@ -50,8 +55,9 @@ public class TokenGen : ITokenGen
         var handler = new JwtSecurityTokenHandler();
         var token = handler.CreateToken(descriptor);
 
-        var existingRefreshToken = _databaseContext.RefreshTokens
-            .FirstOrDefault(rt => rt.UserId == user.Id);
+  
+        var existingRefreshToken = await _databaseContext.RefreshTokens
+            .FirstOrDefaultAsync(rt => rt.UserId == user.Id);
 
         if (existingRefreshToken != null)
         {
@@ -69,7 +75,7 @@ public class TokenGen : ITokenGen
             });
         }
 
-        _databaseContext.SaveChanges();
+        await _databaseContext.SaveChangesAsync();
 
         return new Tokens
         {
@@ -79,17 +85,33 @@ public class TokenGen : ITokenGen
     }
 
 
-    private string GenerateRefreshTokenJWT(Staff user)
+
+    private async Task<string> GenerateRefreshTokenJWTAsync(Staff user)
     {
         var refreshTokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.UTF8.GetBytes(_config["jwt:key"]);
+        var role = await _userManager.GetRolesAsync(user);
+        var roleName = role.FirstOrDefault()?.ToString(); // Ensure the role is correctly assigned
 
+        // Check if the user already has a refresh token in the database
+        var existingRefreshToken = await _databaseContext.RefreshTokens
+            .FirstOrDefaultAsync(rt => rt.UserId == user.Id);
+
+        if (existingRefreshToken != null && existingRefreshToken.ExpiresAt > DateTime.UtcNow)
+        {
+            // If the existing refresh token is still valid, return it
+            return existingRefreshToken.Token;
+        }
+
+        // If the existing refresh token is expired or does not exist, generate a new token
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(new[]
             {
-            new Claim(ClaimTypes.Sid, user.Id.ToString()),
-            new Claim(ClaimTypes.Email, user.Email),
+            new Claim("email", user.Email),
+            new Claim("name", user.FirstName),
+            new Claim("sid", user.Id.ToString()),
+            new Claim("role", roleName),
             new Claim("token_type", "refresh")
         }),
             Expires = DateTime.UtcNow.AddDays(7),
@@ -102,8 +124,30 @@ public class TokenGen : ITokenGen
         };
 
         var token = refreshTokenHandler.CreateToken(tokenDescriptor);
-        return refreshTokenHandler.WriteToken(token);
+        var refreshTokenString = refreshTokenHandler.WriteToken(token);
+
+        if (existingRefreshToken != null)
+        {
+            existingRefreshToken.ExpiresAt = DateTime.UtcNow.AddDays(7);
+            _databaseContext.RefreshTokens.Update(existingRefreshToken);
+        }
+        else
+        {
+            _databaseContext.RefreshTokens.Add(new RefreshToken
+            {
+                Token = refreshTokenString,
+                UserId = user.Id,
+                ExpiresAt = DateTime.UtcNow.AddDays(7)
+            });
+        }
+
+        await _databaseContext.SaveChangesAsync();
+
+        return refreshTokenString;
     }
+
+
+
 
     public async Task<Tokens> CreateAccessTokenFromRefreshTokenAsync(string refreshToken)
     {
@@ -125,7 +169,7 @@ public class TokenGen : ITokenGen
 
             var result = tokenHandler.ValidateTokenAsync(refreshToken, tokenValidationParameters);
 
-            var userId = result.Result.Claims.FirstOrDefault(c => c.Key == ClaimTypes.Sid).Value.ToString();
+            var userId = result.Result.Claims.FirstOrDefault(c => c.Key == "sid").Value.ToString();
             if (string.IsNullOrEmpty(userId))
                 throw new SecurityTokenException("User ID not found in the token.");
 
@@ -150,7 +194,7 @@ public class TokenGen : ITokenGen
                 throw new SecurityTokenException("Refresh token has expired.");
             }
 
-            return CreateToken(user);
+            return await CreateTokenAsync(user);
         }
         catch (SecurityTokenException ex)
         {
@@ -159,6 +203,44 @@ public class TokenGen : ITokenGen
         catch (Exception ex)
         {
             throw new ApplicationException("An unexpected error occurred during token renewal.", ex);
+        }
+    }
+
+    public async Task<Staff> DecodeToken(string token)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(token))
+                throw new SecurityTokenException("Token is missing.");
+
+            if (token.StartsWith("Bearer "))
+                token = token.Substring("Bearer ".Length);
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+
+            if (!tokenHandler.CanReadToken(token))
+                throw new SecurityTokenException("Malformed token.");
+
+            var jwtToken = tokenHandler.ReadJwtToken(token);
+
+            var userId = jwtToken.Claims.FirstOrDefault(c => c.Type == "sid")?.Value;
+            var email = jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+                throw new SecurityTokenException("Token does not contain user ID.");
+            if (string.IsNullOrEmpty(email))
+                throw new SecurityTokenException("Token does not contain email.");
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                throw new SecurityTokenException($"User with ID {userId} not found.");
+
+            return user;
+        }
+        catch (Exception ex)
+        {
+            
+            throw new SecurityTokenException("Token decoding failed: " + ex.Message, ex);
         }
     }
 }

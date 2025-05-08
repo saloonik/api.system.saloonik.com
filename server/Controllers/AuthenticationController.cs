@@ -2,8 +2,8 @@ using beautysalon.AuthContracts;
 using beautysalon.Contracts;
 using beautysalon.Database.Models;
 using beautysalon.Logic.DTOs.ServerResponse;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Net.Http.Headers;
 
 namespace beautysalon.Controllers
 {
@@ -12,13 +12,13 @@ namespace beautysalon.Controllers
     public class AuthenticationController : ControllerBase
     {
         private readonly IAuthService _authService;
-        public AuthenticationController (IAuthService authService)
+        public AuthenticationController(IAuthService authService)
         {
             _authService = authService;
         }
 
         [HttpPost("/register")]
-        public async Task<ActionResult> RegisterAsync (RegisterRequest authRequest)
+        public async Task<ActionResult> RegisterAsync([FromBody] RegisterRequest authRequest)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -27,7 +27,18 @@ namespace beautysalon.Controllers
             {
                 var result = await _authService.RegisterAsync(authRequest);
 
-                return StatusCode(result.StatusCode, result);
+                var response = new ServerResponse
+                {
+                    IsSuccess = result.IsSuccess,
+                    ResultTitle = result.ResultTitle,
+                    ResultDescription = result.ResultDescription,
+                    StatusCode = result.StatusCode,
+                    StatusMessage = result.StatusMessage,
+                    RefreshToken = result.RefreshToken,
+                    Token = result.Token,
+                };
+
+                return StatusCode(result.StatusCode, response);
             }
             catch (Exception ex)
             {
@@ -43,7 +54,7 @@ namespace beautysalon.Controllers
         }
 
         [HttpPost("/login")]
-        public async Task<ActionResult> LoginAsync (LoginRequest authRequest)
+        public async Task<ActionResult> LoginAsync([FromBody] LoginRequest authRequest)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -67,10 +78,9 @@ namespace beautysalon.Controllers
         }
 
         [HttpPost("/refresh")]
+        [Authorize(Roles = "Staff,Owner")]
         public async Task<ActionResult> GetAccessTokenAsync([FromHeader] string refreshToken)
         {
-            if (string.IsNullOrEmpty(refreshToken))
-                return BadRequest("Refresh token is required.");
 
             try
             {
@@ -90,6 +100,5 @@ namespace beautysalon.Controllers
                 });
             }
         }
-
     }
 }
