@@ -6,8 +6,12 @@ EXPOSE 80
 # Use the SDK image to build the app
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY ["beautysalon.csproj", "beautysalon/"]
+
+# Copy the csproj file to the working directory and restore dependencies
+COPY ["beautysalon/beautysalon.csproj", "beautysalon/"]
 RUN dotnet restore "beautysalon/beautysalon.csproj"
+
+# Copy the rest of the application and build it
 COPY . .
 WORKDIR "/src/beautysalon"
 RUN dotnet build "beautysalon.csproj" -c Release -o /app/build
