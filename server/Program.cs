@@ -17,6 +17,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
+builder.Configuration.AddUserSecrets<Program>();
+builder.Configuration.AddUserSecrets<TokenGen>();
+Console.WriteLine($"Database Connection String: {builder.Configuration["db-sql:saloonik"]}");
+
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<DatabaseContext>(opt => opt.UseNpgsql(builder.Configuration["db-sql:saloonik"]));
