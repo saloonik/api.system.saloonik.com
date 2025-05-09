@@ -1,13 +1,20 @@
-﻿namespace beautysalon.Database.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace beautysalon.Database.Models
 {
     public class Reservation
     {
-        public Guid ReservationId { get; set; } = Guid.NewGuid();
-        public required List<Service> Services { get; set; }
-        public Guid ClientId { get; set; }
-        public required Client Client { get; set; }
-        public Guid CompanyID { get; set; }
-        public required Company Company { get; set; }
+        [Key]
+        public Guid ReservationId { get; set; }
+
+        [Required]
+        public ICollection<Service> Services { get; set; } = new List<Service>();
+
+        [Required]
+        public Client Client { get; set; }
+
+        [Required]
+        public Company Company { get; set; }
 
         public decimal TotalPrice
         {
