@@ -1,8 +1,6 @@
-﻿using beautysalon.Database.Models;
-using beautysalon.Logic.DTOs;
+﻿using beautysalon.Logic.DTOs;
 using beautysalon.Logic.DTOs.ServerResponse;
 using beautysalon.Logic.Services.ClientService;
-using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
