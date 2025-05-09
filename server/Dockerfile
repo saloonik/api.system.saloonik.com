@@ -8,12 +8,11 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Copy the csproj file to the working directory and restore dependencies
-COPY ["beautysalon/beautysalon.csproj", "beautysalon/"]
-RUN dotnet restore "beautysalon/beautysalon.csproj"
+COPY ["beautysalon.csproj", "."]
+RUN dotnet restore "beautysalon.csproj"
 
 # Copy the rest of the application and build it
 COPY . .
-WORKDIR "/src/beautysalon"
 RUN dotnet build "beautysalon.csproj" -c Release -o /app/build
 
 # Publish the app to /app/publish
