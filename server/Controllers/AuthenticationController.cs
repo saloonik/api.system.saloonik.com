@@ -28,18 +28,7 @@ namespace beautysalon.Controllers
             {
                 var result = await _authService.RegisterAsync(authRequest);
 
-                var response = new ServerResponse
-                {
-                    IsSuccess = result.IsSuccess,
-                    ResultTitle = result.ResultTitle,
-                    ResultDescription = result.ResultDescription,
-                    StatusCode = result.StatusCode,
-                    StatusMessage = result.StatusMessage,
-                    RefreshToken = result.RefreshToken,
-                    Token = result.Token,
-                };
-
-                return StatusCode(result.StatusCode, response);
+                return StatusCode(result.StatusCode, result);
             }
             catch (Exception ex)
             {

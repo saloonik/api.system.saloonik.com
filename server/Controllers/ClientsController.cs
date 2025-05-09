@@ -2,6 +2,7 @@
 using beautysalon.Logic.DTOs;
 using beautysalon.Logic.DTOs.ServerResponse;
 using beautysalon.Logic.Services.ClientService;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -43,14 +44,7 @@ namespace beautysalon.Controllers
 
                 var result = await _clientService.AddClientAsync(client, accessToken);
 
-                return StatusCode(result.StatusCode, new ServerResponse
-                {
-                    IsSuccess = result.IsSuccess,
-                    ResultTitle = result.ResultTitle,
-                    ResultDescription = result.ResultDescription,
-                    StatusCode = result.StatusCode,
-                    StatusMessage = result.StatusMessage
-                });
+                return StatusCode(result.StatusCode, result);
             }
             catch (Exception ex)
             {

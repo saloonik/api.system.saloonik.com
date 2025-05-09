@@ -52,7 +52,7 @@ namespace beautysalon.Logic.Services.ClientService
 
                 if (existingClient != null)
                 {
-                    return ServerResponse.CreateErrorResponse("Klient z danym numerem telefonu juz istnieje.", StatusCodes.Status409Conflict);
+                    return ServerResponse.CreateConflictResponse("Klient z danym numerem telefonu juz istnieje.");
                 }
 
                 // Create and save the new client
