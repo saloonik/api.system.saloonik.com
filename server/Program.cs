@@ -15,18 +15,30 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add environment variables
+builder.Configuration.AddEnvironmentVariables();
+
+// Fetch current environment
+var environment = builder.Environment.EnvironmentName;
+
+// Default to local settings if not in test environment
+var jwtKey = builder.Configuration["JWT_KEY"] ?? builder.Configuration["jwt:key"]; // Local fallback
+var jwtIssuer = builder.Configuration["JWT_ISSUER"] ?? "https://localhost:8000"; // Local fallback
+var jwtAudience = builder.Configuration["JWT_AUDIENCE"] ?? "https://localhost:8000"; // Local fallback
+var dbConnectionString = builder.Configuration["DB_CONNECTION_STRING"] ?? "";
+
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddDbContext<DatabaseContext>(opt => opt.UseNpgsql(builder.Configuration["db-sql:saloonik"]));
+builder.Services.AddDbContext<DatabaseContext>(opt => opt.UseNpgsql(dbConnectionString));
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IClientService, ClientService>();
 
 builder.Services.AddScoped<IValidator<LoginRequest>, LoginRequestValidator>();
 builder.Services.AddScoped<IValidator<RegisterRequest>, RegisterRequestValidator>();
-builder.Services.AddScoped<IValidator<ClientDTO>,ClientDTOValidator>();
+builder.Services.AddScoped<IValidator<ClientDTO>, ClientDTOValidator>();
 
 builder.Services.AddScoped<ITokenGen, TokenGen>();
 
@@ -87,7 +99,6 @@ else
     });
 }
 
-
 builder.Services.Configure<IdentityOptions>(options =>
 {
     options.Password.RequireDigit = true;
@@ -120,16 +131,15 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["jwt:issuer"],
-        ValidAudience = builder.Configuration["jwt:audience"],
+        ValidIssuer = jwtIssuer,
+        ValidAudience = jwtAudience,
         IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["jwt:key"])
+            Encoding.UTF8.GetBytes(jwtKey)
         )
     };
 });
 
-
-async Task CreateRole (RoleManager<ApplicationRole> roleManager, string roleName)
+async Task CreateRole(RoleManager<ApplicationRole> roleManager, string roleName)
 {
     if (!await roleManager.RoleExistsAsync(roleName))
     {
