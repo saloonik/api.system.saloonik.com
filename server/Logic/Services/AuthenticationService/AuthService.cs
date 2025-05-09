@@ -4,45 +4,50 @@ using beautysalon.Database;
 using beautysalon.Logic.DTOs.ServerResponse;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using beautysalon.Logic.Services.Validators.CompanyValidator;
 using beautysalon.AuthContracts;
 using beautysalon.Logic.Services.TokenProvider;
 using beautysalon.Logic.DTOs.Tokens;
+using FluentValidation;
 
 public class AuthService : IAuthService
 {
     private readonly UserManager<Staff> _userManager;
     private readonly DatabaseContext _databaseContext;
     private readonly ILogger<AuthService> _logger;
-    private readonly IValidateCompany _validateCompany;
-    private readonly ITokenGen _tokenGen;
 
-    public AuthService(UserManager<Staff> userManager, ILogger<AuthService> logger, DatabaseContext databaseContext, IValidateCompany validateCompany, ITokenGen tokenGen)
+    private readonly ITokenGen _tokenGen;
+    private readonly IValidator<RegisterRequest> _registerValidator;
+    private readonly IValidator<LoginRequest> _loginValidator;
+
+    public AuthService(UserManager<Staff> userManager, ILogger<AuthService> logger, DatabaseContext databaseContext, ITokenGen tokenGen, IValidator<RegisterRequest> registerValidator, IValidator<LoginRequest> loginValidator)
     {
         _userManager = userManager;
         _logger = logger;
         _databaseContext = databaseContext;
-        _validateCompany = validateCompany;
         _tokenGen = tokenGen;
+        _registerValidator = registerValidator;
+        _loginValidator = loginValidator;
     }
-    public async Task<ServerResponse> LoginAsync (LoginRequest authRequest)
+    public async Task<ServerResponse> LoginAsync(LoginRequest authRequest)
     {
         try
         {
-            var user = await _userManager.FindByEmailAsync(authRequest.Email);
+            var validationResult = await _loginValidator.ValidateAsync(authRequest);
+            if (!validationResult.IsValid)
+                return ServerResponse.CreateValidationFailedResponse(validationResult.Errors);
 
+            var user = await _userManager.FindByEmailAsync(authRequest.Email);
             if (user is null)
             {
-                _logger.LogWarning($"Login failed for email {authRequest.Email}: user not found.");
-                return ServerResponse.CreateErrorResponse("Niepoprawny email lub hasło", StatusCodes.Status401Unauthorized);
+                _logger.LogWarning("Login failed: user not found for email {Email}", authRequest.Email);
+                return ServerResponse.CreateUnauthorizedResponse("Podany e-mail nie istnieje w systemie.");
             }
 
-            var result = await _userManager.CheckPasswordAsync(user, authRequest.Password);
-
-            if (!result)
+            var passwordValid = await _userManager.CheckPasswordAsync(user, authRequest.Password);
+            if (!passwordValid)
             {
-                _logger.LogWarning($"Login failed for email {authRequest.Email}: incorrect password.");
-                return ServerResponse.CreateErrorResponse("Niepoprawny email lub hasło", StatusCodes.Status401Unauthorized);
+                _logger.LogWarning("Login failed: invalid password for email {Email}", authRequest.Email);
+                return ServerResponse.CreateUnauthorizedResponse("Hasło jest niepoprawne.");
             }
 
             Tokens token = await _tokenGen.CreateTokenAsync(user);
@@ -52,43 +57,40 @@ public class AuthService : IAuthService
                 IsSuccess = true,
                 ResultTitle = "Zalogowano pomyślnie",
                 StatusCode = StatusCodes.Status200OK,
-                StatusMessage = "Zalogowano pomyślnie",
-                ResultDescription = "Zalogowano",
+                StatusMessage = "Zalogowano",
+                ResultDescription = "Dane logowania są poprawne.",
                 Token = token.AccessToken,
                 RefreshToken = token.RefreshToken
             };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"An error occurred while loggin in... {authRequest.Email}.");
-            return ServerResponse.CreateErrorResponse("Wystąpił błąd podczas logowania", StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "Unexpected error during login for {Email}", authRequest.Email);
+            return ServerResponse.CreateInternalErrorResponse("Wystąpił błąd podczas logowania.");
         }
-      
+    
     }
+
+
     public async Task<ServerResponse> RegisterAsync(RegisterRequest authRequest)
     {
         using var transaction = await _databaseContext.Database.BeginTransactionAsync();
         try
         {
-            var existingUser = await _userManager.FindByEmailAsync(authRequest.Email);
-            if (existingUser != null)
+            var validationResult = await _registerValidator.ValidateAsync(authRequest);
+            if (!validationResult.IsValid)
+                return ServerResponse.CreateValidationFailedResponse(validationResult.Errors);
+
+            if (await _userManager.FindByEmailAsync(authRequest.Email) is not null)
             {
-                _logger.LogWarning($"User with email {authRequest.Email} already exists.");
-                return ServerResponse.CreateErrorResponse("Email jest zajęty", StatusCodes.Status409Conflict);
+                _logger.LogWarning("Registration failed: Email {Email} already in use", authRequest.Email);
+                return ServerResponse.CreateConflictResponse("Email jest już w użyciu.");
             }
 
-            var isNipValid = await _validateCompany.ValidateCompanyNIP(authRequest.CompanyNIP);
-            if (!isNipValid)
+            if (await _databaseContext.Companies.AnyAsync(c => c.Nip == authRequest.CompanyNIP))
             {
-                _logger.LogWarning($"The NIP number {authRequest.CompanyNIP} is invalid.");
-                return ServerResponse.CreateErrorResponse("NIP jest niepoprawny", StatusCodes.Status400BadRequest);
-            }
-
-            var companyExists = await _databaseContext.Companies.AnyAsync(c => c.Nip == authRequest.CompanyNIP);
-            if (companyExists)
-            {
-                _logger.LogWarning($"Company with NIP {authRequest.CompanyNIP} already exists.");
-                return ServerResponse.CreateErrorResponse("Firma z tym NIPem już istnieje", StatusCodes.Status409Conflict);
+                _logger.LogWarning("Registration failed: Company NIP {NIP} already exists", authRequest.CompanyNIP);
+                return ServerResponse.CreateConflictResponse("Firma z podanym NIP już istnieje.");
             }
 
             var company = new Company
@@ -96,11 +98,12 @@ public class AuthService : IAuthService
                 Name = authRequest.CompanyName,
                 Nip = authRequest.CompanyNIP,
                 Street = authRequest.Street,
+                State = authRequest.State,
                 City = authRequest.City,
                 PostalCode = authRequest.PostalCode,
                 Country = authRequest.Country,
-
             };
+
             await _databaseContext.Companies.AddAsync(company);
             await _databaseContext.SaveChangesAsync();
 
@@ -108,55 +111,53 @@ public class AuthService : IAuthService
 
             var user = new Staff
             {
-                Email = authRequest.Email,
-                UserName = authRequest.Email,
+                Email = authRequest.Email.Trim().ToLowerInvariant(),
                 FirstName = firstName,
+                UserName = authRequest.Email,
                 LastName = lastName,
                 Company = company
             };
 
             var createUserResult = await _userManager.CreateAsync(user, authRequest.Password);
+
             if (!createUserResult.Succeeded)
             {
-                foreach (var error in createUserResult.Errors)
-                {
-                    _logger.LogWarning($"Error creating user with email {authRequest.Email}: {error.Description}");
-                }
-
-                var errorMessages = string.Join(", ", createUserResult.Errors.Select(e => e.Description));
                 await transaction.RollbackAsync();
-                return ServerResponse.CreateErrorResponse("Nie udało się założyć konta", StatusCodes.Status400BadRequest, errorMessages);
+                var errors = string.Join(", ", createUserResult.Errors.Select(e => e.Description));
+                _logger.LogWarning("User creation failed for {Email}: {Errors}", authRequest.Email, errors);
+                return ServerResponse.CreateBadRequestResponse($"Błąd tworzenia konta: {errors}");
             }
 
-            var addRoleResult = await _userManager.AddToRoleAsync(user, "Owner");
-            if (!addRoleResult.Succeeded)
+            var roleResult = await _userManager.AddToRoleAsync(user, "Owner");
+
+            if (!roleResult.Succeeded)
             {
-                _logger.LogWarning($"Failed to assign role to user {authRequest.Email}.");
                 await transaction.RollbackAsync();
-                return ServerResponse.CreateErrorResponse("Nie udało się przypisać roli", StatusCodes.Status400BadRequest);
+                _logger.LogWarning("Failed to assign Owner role to {Email}", authRequest.Email);
+                return ServerResponse.CreateBadRequestResponse("Nie udało się przypisać roli właściciela.");
             }
 
             await transaction.CommitAsync();
 
-            _logger.LogInformation($"User {authRequest.Email} successfully registered with company {authRequest.CompanyName}.");
+            _logger.LogInformation("User {Email} registered successfully", authRequest.Email);
             return new ServerResponse
             {
                 IsSuccess = true,
-                ResultTitle = "Pomyślnie założono konto",
+                ResultTitle = "Rejestracja zakończona sukcesem",
                 StatusCode = StatusCodes.Status201Created,
-                StatusMessage = "Pomyślnie założono firmę oraz konto właściciela",
-                ResultDescription = "Założono"
+                StatusMessage = "Konto oraz firma zostały pomyślnie utworzone",
+                ResultDescription = "Rejestracja zakończona sukcesem"
             };
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            _logger.LogError(ex, $"An error occurred while registering user with email {authRequest.Email}.");
-            return ServerResponse.CreateErrorResponse("Wystąpił błąd podczas rejestracji", StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "Unexpected error during registration for {Email}", authRequest.Email);
+            return ServerResponse.CreateInternalErrorResponse("Wystąpił błąd podczas rejestracji.");
         }
     }
 
-    public async Task<ServerResponse> GetAccessTokenFromRefreshTokenAsync(string refreshToken)
+    public async Task<ServerResponse> RefreshAccessTokenAsync(string refreshToken)
     {
         try
         {
@@ -175,8 +176,8 @@ public class AuthService : IAuthService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"An error occurred creating accessToken");
-            return ServerResponse.CreateErrorResponse("Wystąpił błąd podczas tworzenia access tokenu", StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "An error occurred creating access token from refresh token");
+            return ServerResponse.CreateInternalErrorResponse("Nie udało się odświeżyć tokenu dostępu.");
         }
     }
     

@@ -20,47 +20,49 @@ namespace beautysalon.Controllers
 
         [HttpPost("Add")]
         [Authorize(Roles = "Owner,Staff")]
-        public async Task<ActionResult> AddClient([FromBody] ClientDTO client)
+        public async Task<IActionResult> AddClient([FromBody] ClientDTO client)
         {
-
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-
-            var authHeader = Request.Headers["Authorization"].ToString();
-            if (string.IsNullOrWhiteSpace(authHeader))
-                return Unauthorized("Missing token");
-
-            var token = authHeader.Replace("Bearer ", "");
-
             try
             {
-                var result = await _clientService.AddClientAsync(client, token);
+                var accessToken = HttpContext.Request.Headers["Authorization"]
+                    .ToString()
+                    .Replace("Bearer ", "", StringComparison.OrdinalIgnoreCase);
 
-                var response = new ServerResponse
+                if (string.IsNullOrWhiteSpace(accessToken))
+                    return Unauthorized(new ServerResponse
+                    {
+                        IsSuccess = false,
+                        ResultTitle = "Unauthorized",
+                        ResultDescription = "Missing or invalid token.",
+                        StatusCode = 401,
+                        StatusMessage = "Unauthorized"
+                    });
+
+                var result = await _clientService.AddClientAsync(client, accessToken);
+
+                return StatusCode(result.StatusCode, new ServerResponse
                 {
                     IsSuccess = result.IsSuccess,
                     ResultTitle = result.ResultTitle,
                     ResultDescription = result.ResultDescription,
                     StatusCode = result.StatusCode,
                     StatusMessage = result.StatusMessage
-                };
-
-                return StatusCode(result.StatusCode, response);
+                });
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
                 return StatusCode(500, new ServerResponse
                 {
                     IsSuccess = false,
-                    ResultTitle = "Error",
-                    ResultDescription = Ex.Message,
+                    ResultTitle = "Internal Server Error",
+                    ResultDescription = ex.Message,
                     StatusCode = 500,
                     StatusMessage = "An unexpected error occurred."
                 });
             }
-        
         }
-
     }
 }

@@ -1,8 +1,11 @@
+using beautysalon.AuthContracts;
+using beautysalon.Contracts;
 using beautysalon.Database;
 using beautysalon.Database.Models;
+using beautysalon.Logic.DTOs;
 using beautysalon.Logic.Services.ClientService;
 using beautysalon.Logic.Services.TokenProvider;
-using beautysalon.Logic.Services.Validators.CompanyValidator;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +16,7 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<DatabaseContext>(opt => opt.UseNpgsql(builder.Configuration["db-sql:saloonik"]));
@@ -20,7 +24,10 @@ builder.Services.AddDbContext<DatabaseContext>(opt => opt.UseNpgsql(builder.Conf
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IClientService, ClientService>();
 
-builder.Services.AddScoped<IValidateCompany, ValidateCompany>();
+builder.Services.AddScoped<IValidator<LoginRequest>, LoginRequestValidator>();
+builder.Services.AddScoped<IValidator<RegisterRequest>, RegisterRequestValidator>();
+builder.Services.AddScoped<IValidator<ClientDTO>,ClientDTOValidator>();
+
 builder.Services.AddScoped<ITokenGen, TokenGen>();
 
 builder.Services.AddIdentity<Staff, ApplicationRole>()
@@ -40,7 +47,7 @@ builder.Services.AddSwaggerGen(c => {
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "JWT Authorization header using the Bearer scheme. \r\n\r\n Enter 'Bearer' [space] and then your token in the text input below.\r\n\r\nExample: \"Bearer 1safsfsdfdfd\"",
+        Description = "JWT Authorization header using the Bearer scheme. \r\n\r\n Enter 'Bearer' [space] and then your token in the text input below.\r\n\r\nExample: \"Bearer {token}\"",
     });
     c.AddSecurityRequirement(new OpenApiSecurityRequirement {
         {
@@ -54,6 +61,32 @@ builder.Services.AddSwaggerGen(c => {
         }
     });
 });
+
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("AllowSpecificOrigin", policy =>
+        {
+            policy.WithOrigins("http://localhost:3000")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+    });
+}
+else
+{
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("AllowSpecificOrigin", policy =>
+        {
+            policy.WithOrigins("https://system.saloonik.com")
+                  .WithMethods("GET", "POST", "DELETE")
+                  .WithHeaders("Authorization", "Content-Type");
+        });
+    });
+}
+
 
 builder.Services.Configure<IdentityOptions>(options =>
 {
@@ -106,14 +139,8 @@ async Task CreateRole (RoleManager<ApplicationRole> roleManager, string roleName
 
 var app = builder.Build();
 
-app.UseCors(builder =>
-{
-    builder.AllowAnyOrigin()
-           .AllowAnyMethod()
-           .AllowAnyHeader();
-});
+app.UseCors("AllowSpecificOrigin");
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -124,7 +151,6 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Create roles after the application has started.
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();

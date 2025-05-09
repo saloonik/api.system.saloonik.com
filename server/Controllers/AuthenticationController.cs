@@ -1,6 +1,5 @@
 using beautysalon.AuthContracts;
 using beautysalon.Contracts;
-using beautysalon.Database.Models;
 using beautysalon.Logic.DTOs.ServerResponse;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,6 +11,7 @@ namespace beautysalon.Controllers
     public class AuthenticationController : ControllerBase
     {
         private readonly IAuthService _authService;
+     
         public AuthenticationController(IAuthService authService)
         {
             _authService = authService;
@@ -20,6 +20,7 @@ namespace beautysalon.Controllers
         [HttpPost("/register")]
         public async Task<ActionResult> RegisterAsync([FromBody] RegisterRequest authRequest)
         {
+
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
@@ -56,8 +57,10 @@ namespace beautysalon.Controllers
         [HttpPost("/login")]
         public async Task<ActionResult> LoginAsync([FromBody] LoginRequest authRequest)
         {
+
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
+
             try
             {
                 var result = await _authService.LoginAsync(authRequest);
@@ -78,13 +81,12 @@ namespace beautysalon.Controllers
         }
 
         [HttpPost("/refresh")]
-        [Authorize(Roles = "Staff,Owner")]
+        [Authorize(Roles = "Owner,Staff")]
         public async Task<ActionResult> GetAccessTokenAsync([FromHeader] string refreshToken)
         {
-
             try
             {
-                var result = await _authService.GetAccessTokenFromRefreshTokenAsync(refreshToken);
+                var result = await _authService.RefreshAccessTokenAsync(refreshToken);
 
                 return StatusCode(result.StatusCode, result);
             }

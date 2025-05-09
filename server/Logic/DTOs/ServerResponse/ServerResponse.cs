@@ -21,5 +21,26 @@
                 ResultDescription = description ?? message
             };
         }
+        public static ServerResponse CreateValidationFailedResponse(IEnumerable<FluentValidation.Results.ValidationFailure> errors)
+        {
+            var errorList = string.Join(", ", errors.Select(e => e.ErrorMessage));
+            return ServerResponse.CreateErrorResponse(
+                "Niepoprawne dane formularza",
+                StatusCodes.Status400BadRequest,
+                $"Wprowadzone dane są nieprawidłowe: {errorList}"
+            );
+        }
+
+        public static ServerResponse CreateBadRequestResponse(string message) =>
+            ServerResponse.CreateErrorResponse("Nieprawidłowe żądanie", StatusCodes.Status400BadRequest, message);
+
+        public static ServerResponse CreateUnauthorizedResponse(string message) =>
+            ServerResponse.CreateErrorResponse("Nieautoryzowany dostęp", StatusCodes.Status401Unauthorized, message);
+
+        public static ServerResponse CreateConflictResponse(string message) =>
+            ServerResponse.CreateErrorResponse("Konflikt danych", StatusCodes.Status409Conflict, message);
+
+        public static ServerResponse CreateInternalErrorResponse(string message) =>
+            ServerResponse.CreateErrorResponse("Błąd wewnętrzny serwera", StatusCodes.Status500InternalServerError, message);
     }
 }

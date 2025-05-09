@@ -3,6 +3,7 @@ using beautysalon.Database.Models;
 using beautysalon.Logic.DTOs;
 using beautysalon.Logic.DTOs.ServerResponse;
 using beautysalon.Logic.Services.TokenProvider;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 namespace beautysalon.Logic.Services.ClientService
@@ -12,39 +13,56 @@ namespace beautysalon.Logic.Services.ClientService
         private readonly DatabaseContext _databaseContext;
         private readonly ILogger<ClientService> _logger;
         private readonly ITokenGen _tokenGen;
+        private readonly IValidator<ClientDTO> _clientValidator;
 
-        public ClientService(DatabaseContext databaseContext, ILogger<ClientService> logger, ITokenGen tokenGen)
+        public ClientService(
+            DatabaseContext databaseContext,
+            ILogger<ClientService> logger,
+            ITokenGen tokenGen,
+            IValidator<ClientDTO> clientValidator)
         {
             _databaseContext = databaseContext;
             _logger = logger;
             _tokenGen = tokenGen;
+            _clientValidator = clientValidator;
         }
 
         public async Task<ServerResponse> AddClientAsync(ClientDTO client, string token)
         {
             try
             {
-                var decodedToken = await _tokenGen.DecodeToken(token);
+                // Validate the client using FluentValidation
+                var validation = await _clientValidator.ValidateAsync(client);
+                if (!validation.IsValid)
+                {
+                    return ServerResponse.CreateValidationFailedResponse(validation.Errors);
+                }
+
+                // Decode the token and get the company details
+                var decodedUserToken = await _tokenGen.DecodeToken(token);
 
                 var company = await _databaseContext.Companies
-                    .Include(c => c.Staff)
-                    .FirstOrDefaultAsync(c => c.CompanyId == decodedToken.CompanyId);
+                     .Include(c => c.Staff)
+                     .Where(c => c.Staff.Any(s => s.Id == decodedUserToken.Id))
+                     .FirstOrDefaultAsync();
 
-                var existingClient = await _databaseContext.Clients.FirstOrDefaultAsync(c => c.PhoneNumber == client.PhoneNumber);
+                // Check if the client already exists
+                var existingClient = await _databaseContext.Clients
+                    .FirstOrDefaultAsync(c => c.PhoneNumber == client.PhoneNumber);
 
                 if (existingClient != null)
                 {
                     return ServerResponse.CreateErrorResponse("Klient z danym numerem telefonu juz istnieje.", StatusCodes.Status409Conflict);
                 }
 
+                // Create and save the new client
                 var newClient = new Client
                 {
                     FirstName = client.FirstName,
                     LastName = client.LastName,
                     PhoneNumber = client.PhoneNumber,
                     Email = client.Email,
-                    CompanyId = decodedToken.CompanyId,
-                    Company = company,
+                    Company = company
                 };
 
                 await _databaseContext.Clients.AddAsync(newClient);
@@ -65,6 +83,5 @@ namespace beautysalon.Logic.Services.ClientService
                 return ServerResponse.CreateErrorResponse("Wystąpił błąd podczas dodawania klienta", StatusCodes.Status500InternalServerError);
             }
         }
-
     }
 }
