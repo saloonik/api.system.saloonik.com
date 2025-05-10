@@ -19,7 +19,7 @@ namespace beautysalon.Controllers
 
         [HttpPost("Add")]
         [Authorize(Roles = "Owner,Staff")]
-        public async Task<IActionResult> AddClient([FromBody] ClientDTO client)
+        public async Task<ActionResult> AddClient([FromBody] ClientDTO client)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -30,17 +30,39 @@ namespace beautysalon.Controllers
                     .ToString()
                     .Replace("Bearer ", "", StringComparison.OrdinalIgnoreCase);
 
-                if (string.IsNullOrWhiteSpace(accessToken))
-                    return Unauthorized(new ServerResponse
-                    {
-                        IsSuccess = false,
-                        ResultTitle = "Unauthorized",
-                        ResultDescription = "Missing or invalid token.",
-                        StatusCode = 401,
-                        StatusMessage = "Unauthorized"
-                    });
-
                 var result = await _clientService.AddClientAsync(client, accessToken);
+
+                return StatusCode(result.StatusCode, result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ServerResponse
+                {
+                    IsSuccess = false,
+                    ResultTitle = "Internal Server Error",
+                    ResultDescription = ex.Message,
+                    StatusCode = 500,
+                    StatusMessage = "An unexpected error occurred."
+                });
+            }
+        }
+
+        [HttpDelete("Delete/{id}")]
+        [Authorize(Roles = "Owner")]
+        public async Task<ActionResult> DeleteClient([FromRoute] string id)
+        {
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+
+                var token = HttpContext.Request.Headers["Authorization"]
+                    .ToString()
+                    .Replace("Bearer ", "", StringComparison.OrdinalIgnoreCase);
+
+                var result = await _clientService.DeleteClientByIdAsync(id, token);
 
                 return StatusCode(result.StatusCode, result);
             }

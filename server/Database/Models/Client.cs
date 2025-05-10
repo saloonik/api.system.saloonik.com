@@ -1,11 +1,14 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace beautysalon.Database.Models
 {
     public class Client
     {
         [Key]
-        public Guid ClientId { get; set; } = Guid.NewGuid();
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+
+        public string ClientId { get; set; }
 
         [Required(ErrorMessage = "First name is required.")]
         [MaxLength(50, ErrorMessage = "First name cannot exceed 50 characters.")]
@@ -40,12 +43,7 @@ namespace beautysalon.Database.Models
         public string? Country { get; set; }
 
         [Required]
-        public Guid CompanyId { get; set; }
-
-        [Required]
         public Company Company { get; set; }
-
-        public Guid ReservationsID { get; set; }
 
         public List<Reservation>? Reservations { get; set; }
     }

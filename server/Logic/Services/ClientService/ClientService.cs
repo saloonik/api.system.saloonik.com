@@ -5,6 +5,7 @@ using beautysalon.Logic.DTOs.ServerResponse;
 using beautysalon.Logic.Services.TokenProvider;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography.X509Certificates;
 
 namespace beautysalon.Logic.Services.ClientService
 {
@@ -81,6 +82,57 @@ namespace beautysalon.Logic.Services.ClientService
             {
                 _logger.LogError(ex, "Wystąpił błąd podczas dodawania klienta.");
                 return ServerResponse.CreateErrorResponse("Wystąpił błąd podczas dodawania klienta", StatusCodes.Status500InternalServerError);
+            }
+
+        }
+
+        public async Task<ServerResponse> DeleteClientByIdAsync(string id, string token)
+        {
+            try
+            {
+                var client = await _databaseContext.Clients
+       .Include(c => c.Company)
+       .Include(c => c.Reservations)
+       .FirstOrDefaultAsync(c => c.ClientId == id);
+
+                var decodedToken = await _tokenGen.DecodeToken(token);
+
+                var requestorsCompanyID = await _databaseContext.Companies
+                    .Include(c => c.Staff)
+                    .Where(c => c.Staff.Any(s => s.Id == decodedToken.Id))
+                    .FirstOrDefaultAsync();
+
+                if (client == null)
+                {
+                    return ServerResponse.CreateBadRequestResponse("Nie znaleziono klienta o podanym ID.");
+                }
+                
+                if (client.Reservations.Any())
+                {
+                    return ServerResponse.CreateBadRequestResponse("Nie można usunąć klienta, ponieważ ma przypisane rezerwacje.");
+                }
+
+                if (client.Company.CompanyId != requestorsCompanyID.CompanyId)   
+                {
+                    return ServerResponse.CreateUnauthorizedResponse("Klient nie znajduję sie w twojej bazie klientów");
+                }
+
+                _databaseContext.Clients.Remove(client);
+                await _databaseContext.SaveChangesAsync();
+                _logger.LogInformation($"Klient o ID {id} został usunięty.");
+                return new ServerResponse
+                {
+                    IsSuccess = true,
+                    ResultTitle = "Usunięto klienta",
+                    StatusCode = StatusCodes.Status200OK,
+                    StatusMessage = "Usunięto klienta",
+                    ResultDescription = "Klient został usunięty pomyślnie"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Wystąpił błąd podczas usuwania klienta.");
+                return ServerResponse.CreateErrorResponse("Wystąpił błąd podczas usuwania klienta", StatusCodes.Status500InternalServerError);
             }
         }
     }

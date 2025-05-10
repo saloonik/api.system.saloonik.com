@@ -27,7 +27,7 @@
             return ServerResponse.CreateErrorResponse(
                 "Niepoprawne dane formularza",
                 StatusCodes.Status400BadRequest,
-                $"Wprowadzone dane są nieprawidłowe: {errorList}"
+                $"{errorList}"
             );
         }
 

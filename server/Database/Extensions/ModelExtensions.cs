@@ -15,5 +15,14 @@ namespace beautysalon.Database.Extensions
                     j => j.HasOne<Service>().WithMany().HasForeignKey("ServiceId"),
                     j => j.HasOne<Reservation>().WithMany().HasForeignKey("ReservationId"));
         }
+
+        public static void ConfigureCompanyServices(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Service>()
+                .HasOne(s => s.Company)
+                .WithMany(c => c.Services)
+                .HasForeignKey(s => s.CompanyId)
+                .OnDelete(DeleteBehavior.Cascade);
+        }
     }
 }
