@@ -1,11 +1,13 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace beautysalon.Database.Models
 {
     public class Company
     {
         [Key]
-        public Guid CompanyId { get; set; } = Guid.NewGuid();
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public string CompanyId { get; set; }
 
         [Required]
         [MaxLength(100)]
@@ -29,11 +31,15 @@ namespace beautysalon.Database.Models
 
         [Required]
         [MaxLength(100)]
-        public string State { get; set; }
+        public string Country { get; set; }
 
         [Required]
         [MaxLength(100)]
-        public string Country { get; set; }
+        public string Headquarters { get; set; }
+
+        [Required]
+        [MaxLength(20)]
+        public string Regon { get; set; }
 
         public virtual ICollection<Client>? ApplicationUsers { get; set; }
         public virtual ICollection<Staff>? Staff { get; set; }

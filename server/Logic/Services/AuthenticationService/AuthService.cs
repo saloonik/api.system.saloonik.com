@@ -33,6 +33,7 @@ public class AuthService : IAuthService
         try
         {
             var validationResult = await _loginValidator.ValidateAsync(authRequest);
+
             if (!validationResult.IsValid)
                 return ServerResponse.CreateValidationFailedResponse(validationResult.Errors);
 
@@ -78,6 +79,7 @@ public class AuthService : IAuthService
         try
         {
             var validationResult = await _registerValidator.ValidateAsync(authRequest);
+
             if (!validationResult.IsValid)
                 return ServerResponse.CreateValidationFailedResponse(validationResult.Errors);
 
@@ -87,25 +89,34 @@ public class AuthService : IAuthService
                 return ServerResponse.CreateConflictResponse("Email jest już w użyciu.");
             }
 
-            if (await _databaseContext.Companies.AnyAsync(c => c.Nip == authRequest.CompanyNIP))
+            if (await _databaseContext.Companies.AnyAsync(c => c.Nip == authRequest.Nip))
             {
-                _logger.LogWarning("Registration failed: Company NIP {NIP} already exists", authRequest.CompanyNIP);
+                _logger.LogWarning("Registration failed: Company NIP {NIP} already exists", authRequest.Nip);
                 return ServerResponse.CreateConflictResponse("Firma z podanym NIP już istnieje.");
+            }
+
+            if (await _databaseContext.Companies.AnyAsync(c => c.Regon == authRequest.Regon))
+            {
+                _logger.LogWarning("Registration failed: Company Regon {Regon} already exists", authRequest.Nip);
+                return ServerResponse.CreateConflictResponse("Firma z podanym identyfikatorem Regon już istnieje.");
             }
 
             var company = new Company
             {
                 Name = authRequest.CompanyName,
-                Nip = authRequest.CompanyNIP,
+                Nip = authRequest.Nip,
                 Street = authRequest.Street,
-                State = authRequest.State,
+                Regon = authRequest.Regon,
                 City = authRequest.City,
                 PostalCode = authRequest.PostalCode,
                 Country = authRequest.Country,
+                Headquarters = authRequest.Headquarters,
             };
 
             await _databaseContext.Companies.AddAsync(company);
             await _databaseContext.SaveChangesAsync();
+
+           var savedCompany = await _databaseContext.Companies.FindAsync(company.CompanyId);
 
             var (firstName, lastName) = ParseFullName(authRequest.Name);
 
@@ -115,7 +126,7 @@ public class AuthService : IAuthService
                 FirstName = firstName,
                 UserName = authRequest.Email,
                 LastName = lastName,
-                Company = company
+                Company = savedCompany
             };
 
             var createUserResult = await _userManager.CreateAsync(user, authRequest.Password);

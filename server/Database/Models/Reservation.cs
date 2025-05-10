@@ -1,11 +1,13 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace beautysalon.Database.Models
 {
     public class Reservation
     {
         [Key]
-        public Guid ReservationId { get; set; }
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public string ReservationId { get; set; }
 
         [Required]
         public ICollection<Service> Services { get; set; } = new List<Service>();

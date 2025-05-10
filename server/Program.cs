@@ -84,7 +84,7 @@ else
         options.AddPolicy("AllowSpecificOrigin", policy =>
         {
             policy.WithOrigins("https://system.saloonik.com")
-                  .WithMethods("GET", "POST", "DELETE")
+                  .WithMethods("GET", "POST", "DELETE", "PUT")
                   .WithHeaders("Authorization", "Content-Type");
         });
     });

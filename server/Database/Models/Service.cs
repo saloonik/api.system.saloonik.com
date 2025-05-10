@@ -5,7 +5,7 @@ namespace beautysalon.Database.Models
     public class Service
     {
         [Key]
-        public Guid ServiceId { get; set; } 
+        public string ServiceId { get; set; }
 
         [Required]
         [StringLength(100, ErrorMessage = "Service name cannot exceed 100 characters.")]
@@ -23,6 +23,7 @@ namespace beautysalon.Database.Models
         public decimal Price { get; set; }
 
         [Required]
+        public string CompanyId { get; set; } 
         public Company Company { get; set; }
 
         public List<Reservation>? Reservations { get; set; }

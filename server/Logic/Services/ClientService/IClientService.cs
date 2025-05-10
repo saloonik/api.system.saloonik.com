@@ -7,5 +7,6 @@ namespace beautysalon.Logic.Services.ClientService
     public interface IClientService
     {
         Task<ServerResponse> AddClientAsync(ClientDTO client, string token);
+        Task<ServerResponse> DeleteClientByIdAsync(string id, string token);
     }
 }

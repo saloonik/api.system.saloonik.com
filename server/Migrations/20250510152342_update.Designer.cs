@@ -12,8 +12,8 @@ using beautysalon.Database;
 namespace beautysalon.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    [Migration("20250505180327_refreshtokensTable")]
-    partial class refreshtokensTable
+    [Migration("20250510152342_update")]
+    partial class update
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -166,11 +166,11 @@ namespace beautysalon.Migrations
 
             modelBuilder.Entity("ReservationService", b =>
                 {
-                    b.Property<Guid>("ReservationId")
-                        .HasColumnType("uuid");
+                    b.Property<string>("ReservationId")
+                        .HasColumnType("text");
 
-                    b.Property<Guid>("ServiceId")
-                        .HasColumnType("uuid");
+                    b.Property<string>("ServiceId")
+                        .HasColumnType("text");
 
                     b.HasKey("ReservationId", "ServiceId");
 
@@ -181,43 +181,52 @@ namespace beautysalon.Migrations
 
             modelBuilder.Entity("beautysalon.Database.Models.Client", b =>
                 {
-                    b.Property<Guid>("ClientId")
+                    b.Property<string>("ClientId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("text");
 
                     b.Property<string>("City")
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
-                    b.Property<Guid>("CompanyId")
-                        .HasColumnType("uuid");
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("Country")
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("LastName")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("PostalCode")
-                        .HasColumnType("text");
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("State")
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("Street")
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.HasKey("ClientId");
 
@@ -228,37 +237,49 @@ namespace beautysalon.Migrations
 
             modelBuilder.Entity("beautysalon.Database.Models.Company", b =>
                 {
-                    b.Property<Guid>("CompanyId")
+                    b.Property<string>("CompanyId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("text");
 
                     b.Property<string>("City")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Country")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Headquarters")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Nip")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
 
                     b.Property<string>("PostalCode")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Regon")
+                        .IsRequired()
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)");
 
                     b.Property<string>("Street")
                         .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("StreetNumber")
-                        .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.HasKey("CompanyId");
 
@@ -267,11 +288,9 @@ namespace beautysalon.Migrations
 
             modelBuilder.Entity("beautysalon.Database.Models.RefreshToken", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -284,7 +303,8 @@ namespace beautysalon.Migrations
 
                     b.Property<string>("Token")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
@@ -298,15 +318,17 @@ namespace beautysalon.Migrations
 
             modelBuilder.Entity("beautysalon.Database.Models.Reservation", b =>
                 {
-                    b.Property<Guid>("ReservationId")
+                    b.Property<string>("ReservationId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("text");
 
-                    b.Property<Guid>("ClientId")
-                        .HasColumnType("uuid");
+                    b.Property<string>("ClientId")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.Property<Guid>("CompanyID")
-                        .HasColumnType("uuid");
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<Guid?>("StaffId")
                         .HasColumnType("uuid");
@@ -315,7 +337,7 @@ namespace beautysalon.Migrations
 
                     b.HasIndex("ClientId");
 
-                    b.HasIndex("CompanyID");
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("StaffId");
 
@@ -324,31 +346,34 @@ namespace beautysalon.Migrations
 
             modelBuilder.Entity("beautysalon.Database.Models.Service", b =>
                 {
-                    b.Property<Guid>("ServiceId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                    b.Property<string>("ServiceId")
+                        .HasColumnType("text");
 
-                    b.Property<Guid>("CompanyID")
-                        .HasColumnType("uuid");
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<decimal>("Price")
                         .HasColumnType("numeric");
 
                     b.Property<string>("ServiceCategory")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("ServiceDescription")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<string>("ServiceName")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.HasKey("ServiceId");
 
-                    b.HasIndex("CompanyID");
+                    b.HasIndex("CompanyId");
 
                     b.ToTable("Services");
                 });
@@ -362,8 +387,9 @@ namespace beautysalon.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("CompanyId")
-                        .HasColumnType("uuid");
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
@@ -381,11 +407,13 @@ namespace beautysalon.Migrations
 
                     b.Property<string>("FirstName")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("LastName")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");
@@ -548,7 +576,7 @@ namespace beautysalon.Migrations
 
                     b.HasOne("beautysalon.Database.Models.Company", "Company")
                         .WithMany("Reservations")
-                        .HasForeignKey("CompanyID")
+                        .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -565,7 +593,7 @@ namespace beautysalon.Migrations
                 {
                     b.HasOne("beautysalon.Database.Models.Company", "Company")
                         .WithMany("Services")
-                        .HasForeignKey("CompanyID")
+                        .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

@@ -27,6 +27,7 @@ namespace beautysalon.Database
         {
             base.OnModelCreating(modelBuilder);
             ModelExtensions.ConfigureReservationService(modelBuilder);
+            ModelExtensions.ConfigureCompanyServices(modelBuilder);
         }
 
     }

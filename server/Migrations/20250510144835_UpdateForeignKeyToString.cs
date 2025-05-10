@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace beautysalon.Migrations
 {
     /// <inheritdoc />
-    public partial class initmig : Migration
+    public partial class UpdateForeignKeyToString : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -31,15 +31,15 @@ namespace beautysalon.Migrations
                 name: "Companies",
                 columns: table => new
                 {
-                    CompanyId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    Nip = table.Column<string>(type: "text", nullable: false),
-                    Street = table.Column<string>(type: "text", nullable: true),
-                    Number = table.Column<string>(type: "text", nullable: true),
-                    City = table.Column<string>(type: "text", nullable: true),
-                    PostalCode = table.Column<string>(type: "text", nullable: true),
-                    Phone = table.Column<string>(type: "text", nullable: true),
-                    Email = table.Column<string>(type: "text", nullable: true)
+                    CompanyId = table.Column<string>(type: "text", nullable: false),
+                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Nip = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
+                    Street = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    City = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    PostalCode = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    Country = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Headquarters = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Regon = table.Column<string>(type: "character varying(9)", maxLength: 9, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -72,10 +72,13 @@ namespace beautysalon.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    FirstName = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    LastName = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     Salary = table.Column<decimal>(type: "numeric", nullable: true),
                     SalaryBonus = table.Column<decimal>(type: "numeric", nullable: true),
+                    RefreshToken = table.Column<string>(type: "text", nullable: true),
                     DOB = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CompanyId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CompanyId = table.Column<string>(type: "text", nullable: false),
                     UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
@@ -106,17 +109,17 @@ namespace beautysalon.Migrations
                 name: "Clients",
                 columns: table => new
                 {
-                    ClientId = table.Column<Guid>(type: "uuid", nullable: false),
-                    FirstName = table.Column<string>(type: "text", nullable: true),
-                    LastName = table.Column<string>(type: "text", nullable: true),
-                    Email = table.Column<string>(type: "text", nullable: true),
-                    PhoneNumber = table.Column<string>(type: "text", nullable: true),
-                    Street = table.Column<string>(type: "text", nullable: true),
-                    City = table.Column<string>(type: "text", nullable: true),
-                    State = table.Column<string>(type: "text", nullable: true),
-                    PostalCode = table.Column<string>(type: "text", nullable: true),
-                    Country = table.Column<string>(type: "text", nullable: true),
-                    CompanyId = table.Column<Guid>(type: "uuid", nullable: false)
+                    ClientId = table.Column<string>(type: "text", nullable: false),
+                    FirstName = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    LastName = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    PhoneNumber = table.Column<string>(type: "text", nullable: false),
+                    Street = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    City = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    State = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    PostalCode = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
+                    Country = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    CompanyId = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -133,19 +136,19 @@ namespace beautysalon.Migrations
                 name: "Services",
                 columns: table => new
                 {
-                    ServiceId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ServiceName = table.Column<string>(type: "text", nullable: false),
-                    ServiceDescription = table.Column<string>(type: "text", nullable: false),
-                    ServiceCategory = table.Column<string>(type: "text", nullable: false),
+                    ServiceId = table.Column<string>(type: "text", nullable: false),
+                    ServiceName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    ServiceDescription = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    ServiceCategory = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     Price = table.Column<decimal>(type: "numeric", nullable: false),
-                    CompanyID = table.Column<Guid>(type: "uuid", nullable: false)
+                    CompanyId = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Services", x => x.ServiceId);
                     table.ForeignKey(
-                        name: "FK_Services_Companies_CompanyID",
-                        column: x => x.CompanyID,
+                        name: "FK_Services_Companies_CompanyId",
+                        column: x => x.CompanyId,
                         principalTable: "Companies",
                         principalColumn: "CompanyId",
                         onDelete: ReferentialAction.Cascade);
@@ -237,12 +240,34 @@ namespace beautysalon.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "RefreshTokens",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    Token = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ExpiresAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsRevoked = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RefreshTokens", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_RefreshTokens_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Reservations",
                 columns: table => new
                 {
-                    ReservationId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ClientId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CompanyID = table.Column<Guid>(type: "uuid", nullable: false),
+                    ReservationId = table.Column<string>(type: "text", nullable: false),
+                    ClientId = table.Column<string>(type: "text", nullable: false),
+                    CompanyId = table.Column<string>(type: "text", nullable: false),
                     StaffId = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
@@ -260,8 +285,8 @@ namespace beautysalon.Migrations
                         principalColumn: "ClientId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Reservations_Companies_CompanyID",
-                        column: x => x.CompanyID,
+                        name: "FK_Reservations_Companies_CompanyId",
+                        column: x => x.CompanyId,
                         principalTable: "Companies",
                         principalColumn: "CompanyId",
                         onDelete: ReferentialAction.Cascade);
@@ -271,8 +296,8 @@ namespace beautysalon.Migrations
                 name: "ReservationService",
                 columns: table => new
                 {
-                    ReservationId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ServiceId = table.Column<Guid>(type: "uuid", nullable: false)
+                    ReservationId = table.Column<string>(type: "text", nullable: false),
+                    ServiceId = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -339,14 +364,19 @@ namespace beautysalon.Migrations
                 column: "CompanyId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_RefreshTokens_UserId",
+                table: "RefreshTokens",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Reservations_ClientId",
                 table: "Reservations",
                 column: "ClientId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Reservations_CompanyID",
+                name: "IX_Reservations_CompanyId",
                 table: "Reservations",
-                column: "CompanyID");
+                column: "CompanyId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Reservations_StaffId",
@@ -359,9 +389,9 @@ namespace beautysalon.Migrations
                 column: "ServiceId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Services_CompanyID",
+                name: "IX_Services_CompanyId",
                 table: "Services",
-                column: "CompanyID");
+                column: "CompanyId");
         }
 
         /// <inheritdoc />
@@ -381,6 +411,9 @@ namespace beautysalon.Migrations
 
             migrationBuilder.DropTable(
                 name: "AspNetUserTokens");
+
+            migrationBuilder.DropTable(
+                name: "RefreshTokens");
 
             migrationBuilder.DropTable(
                 name: "ReservationService");
